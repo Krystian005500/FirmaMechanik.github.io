@@ -49,6 +49,7 @@
             padding: 20px;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            height: 320px;
         }
 
         /* --- Karty Towarów --- */
@@ -209,6 +210,11 @@
         products = JSON.parse(savedData);
     }
 
+    // Upewnij się, że każdy produkt ma prevPrice (w razie starego zapisu)
+    products.forEach(p => {
+        if (typeof p.prevPrice === 'undefined') p.prevPrice = p.price;
+    });
+
     // --- INICJALIZACJA WYKRESU ---
     const ctx = document.getElementById('marketChart').getContext('2d');
     
@@ -303,9 +309,10 @@
         });
     }
 
-    // --- FUNKCJA AKTUALIZACJI CEN ---
+    // --- FUNKCJA AKTUALIZACJI CEN (ręczne przez admina) ---
     function updatePrice(index, newPrice) {
         newPrice = parseInt(newPrice);
+        if (isNaN(newPrice) || newPrice < 1) return;
         
         // Zapisujemy starą cenę jako 'prevPrice' żeby wykryć trend
         products[index].prevPrice = products[index].price;
@@ -321,6 +328,38 @@
         // Odśwież widok kart (żeby pokazać strzałki)
         renderUI();
     }
+
+    // --- FUNKCJA LOSOWEJ ZMIANY CEN co -5%..+5% ---
+    function randomizeAllPrices() {
+        products.forEach((product, index) => {
+            // Ensure prevPrice exists
+            if (typeof product.prevPrice === 'undefined') product.prevPrice = product.price;
+
+            // Losowy procent od -5 do +5
+            const changePct = (Math.random() * 10) - 5; // [-5, +5)
+            // Oblicz nową cenę na podstawie obecnej ceny
+            const newPrice = Math.max(1, Math.round(product.price * (1 + changePct / 100)));
+
+            // Zapis poprzedniej i nowej ceny
+            product.prevPrice = product.price;
+            product.price = newPrice;
+
+            // Aktualizacja danych wykresu
+            marketChart.data.datasets[0].data[index] = newPrice;
+        });
+
+        // Aktualizuj wykres i UI raz po przejściu przez wszystkie produkty
+        marketChart.update();
+        localStorage.setItem('rp_market_data', JSON.stringify(products));
+        renderUI();
+    }
+
+    // Uruchom losowanie co 1 minutę (60000 ms)
+    const AUTO_UPDATE_INTERVAL_MS = 60 * 1000;
+    setInterval(randomizeAllPrices, AUTO_UPDATE_INTERVAL_MS);
+
+    // (Opcjonalnie) możesz odkomentować poniższe, aby wykonać zmianę od razu przy starcie:
+    // randomizeAllPrices();
 
     // --- FUNKCJA LOGOWANIA ---
     function toggleAdmin() {
