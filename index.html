@@ -1,121 +1,347 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Taryfikator Mechanik</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giełda Towarów Zakazanych | Realistic RP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0f0f13;
+            --bg-card: #1a1a20;
+            --text-main: #e0e0e0;
+            --accent-green: #2ecc71; /* Wzrost */
+            --accent-red: #e74c3c;   /* Spadek */
+            --accent-gold: #d4af37;
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 { color: var(--accent-gold); letter-spacing: 2px; }
+        
+        /* --- Layout --- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- Sekcja Wykresu --- */
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        /* --- Karty Towarów --- */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-left: 4px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .drug-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .drug-unit {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .drug-price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trend-arrow {
+            font-size: 1rem;
+        }
+        
+        .trend-up { color: var(--accent-green); }
+        .trend-down { color: var(--accent-red); }
+        .trend-neutral { color: #555; }
+
+        .drug-desc {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 10px;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+
+        /* --- Panel Admina (Ukryty) --- */
+        #admin-panel {
+            display: none; /* Domyślnie ukryty */
+            margin-top: 50px;
+            background: #222;
+            padding: 20px;
+            border: 1px solid var(--accent-red);
+            border-radius: 10px;
+        }
+
+        .admin-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+
+        .control-group input {
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .login-btn {
+            background: transparent;
+            border: 1px solid #333;
+            color: #333;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-top: 50px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .login-btn:hover { border-color: #555; color: #555; }
+
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Taryfikator Mechanik</h1>
-    <p>Wybierz usterki/naprawy, ustaw ilość (liczba sztuk/instancji) i oblicz orientacyjny koszt.</p>
-  </header>
 
-  <main class="container">
-    <section class="accordion">
-      <button class="accordion-btn">Silnik</button>
-      <div class="panel">
-        <div class="item" data-min="500" data-max="2000">
-          <label><input type="checkbox" class="chk"> Wymiana świec zapłonowych</label>
-          <input type="number" 1" min="1" value="1">
-          <div class="range">Koszt: od 500 do 2000 PLN</div>
-        </div>
+<div class="container">
+    <h1>📈 Notowania Giełdowe Półświatka</h1>
+    <p style="text-align: center; color: #888; margin-bottom: 30px;">Aktualne ceny rynkowe (Update: Live)</p>
 
-        <div class="item" data-min="1500" data-max="8000">
-          <label><input type="checkbox" class="chk"> Remont głowicy / uszczelka pod głowicą</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 1500 do 8000 PLN</div>
-        </div>
-
-        <div class="item" data-min="300" data-max="1200">
-          <label><input type="checkbox" class="chk"> Wymiana paska rozrządu</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 300 do 1200 PLN</div>
-        </div>
-      </div>
-    </section>
-    
-    <section class="accordion">
-      <button class="accordion-btn">Hamulce</button>
-      <div class="panel">
-        <div class="item" data-min="200" data-max="800">
-          <label><input type="checkbox" class="chk"> Wymiana klocków hamulcowych (zestaw)</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 200 do 800 PLN</div>
-        </div>
-
-        <div class="item" data-min="500" data-max="2500">
-          <label><input type="checkbox" class="chk"> Wymiana tarcz hamulcowych</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 500 do 2500 PLN</div>
-        </div>
-      </div>
-    </section>
-    
-    <section class="accordion">
-      <button class="accordion-btn">Zawieszenie</button>
-      <div class="panel">
-        <div class="item" data-min="150" data-max="700">
-          <label><input type="checkbox" class="chk"> Wymiana amortyzatorów (szt.)</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 150 do 700 PLN</div>
-        </div>
-
-        <div class="item" data-min="100" data-max="500">
-          <label><input type="checkbox" class="chk"> Naprawa wahacza</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 100 do 500 PLN</div>
-        </div>
-      </div>
-    </section>
-    <section class="accordion">
-      <button class="accordion-btn">Elektryka</button>
-      <div class="panel">
-        <div class="item" data-min="200" data-max="1200">
-          <label><input type="checkbox" class="chk"> Wymiana alternatora</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 200 do 1200 PLN</div>
-        </div>
-
-        <div class="item" data-min="100" data-max="600">
-          <label><input type="checkbox" class="chk"> Naprawa instalacji elektrycznej</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 100 do 600 PLN</div>
-        </div>
-      </div>
-    </section>
-    
-    <section class="accordion">
-      <button class="accordion-btn">Karoseria</button>
-      <div class="panel">
-        <div class="item" data-min="300" data-max="2000">
-          <label><input type="checkbox" class="chk"> Lakierowanie zderzaka</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 300 do 2000 PLN</div>
-        </div>
-
-        <div class="item" data-min="500" data-max="4000">
-          <label><input type="checkbox" class="chk"> Naprawa wgniecenia / blacharka</label>
-          <input type="number" class="qty" min="1" value="1">
-          <div class="range">Koszt: od 500 do 4000 PLN</div>
-        </div>
-      </div>
-    </section>
-
-    <div class="controls">
-      <button id="calc">Oblicz</button>
-      <button id="reset">Resetuj</button>
-      <div id="summary">
-                <div>Wybrane pozycji: <span id="count">0</span></div>
-        <div>Suma orientacyjna: <span id="sum">0</span> PLN</div>
-        <div>Zakres: <span id="minSum">0</span> — <span id="maxSum">0</span> PLN</div>
-      </div>
+    <div class="chart-container">
+        <canvas id="marketChart"></canvas>
     </div>
 
-  </main>
+    <div class="market-grid" id="cards-container">
+        </div>
 
-  <script src="script.js"></script>
+    <button class="login-btn" onclick="toggleAdmin()">Panel Szefa</button>
+
+    <div id="admin-panel">
+        <h2 style="color: var(--accent-red);">⚠️ Panel Zarządzania Cenami</h2>
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">Zmieniając cenę tutaj, aktualizujesz wykres i strzałki trendów.</p>
+        <div class="admin-controls" id="admin-inputs">
+            </div>
+    </div>
+</div>
+
+<script>
+    // --- BAZA DANYCH ---
+    // Tutaj są zdefiniowane wszystkie towary
+    let products = [
+        { id: 'marihuana', name: '🌿 Marihuana', unit: '1 paczka (10g)', price: 850, prevPrice: 850, desc: 'Standard RP, niski próg wejścia.' },
+        { id: 'haze', name: '🌿 Silver Haze', unit: '1 paczka (10g)', price: 1000, prevPrice: 1000, desc: 'Odmiana marihuany, droższa.' },
+        { id: 'hasz', name: '🟫 Hasz', unit: '1 porcja (10g)', price: 1400, prevPrice: 1400, desc: 'Mocniejszy produkt z konopii.' },
+        { id: 'koka', name: '❄️ Kokaina', unit: '1 porcja (15g)', price: 1100, prevPrice: 1100, desc: 'Wymagający sprzęt, średni risk.' },
+        { id: 'crack', name: '🪨 Crack', unit: '1 porcja (10g)', price: 1500, prevPrice: 1500, desc: 'Pochodna kokainy, wysokie ryzyko.' },
+        { id: 'heroina', name: '💉 Heroina', unit: '1 fiolka (5g)', price: 2000, prevPrice: 2000, desc: 'Laboratorium, średni/high risk.' },
+        { id: 'morfina', name: '💊 Morfina', unit: '1 fiolka (5g)', price: 1800, prevPrice: 1800, desc: 'Średnie ryzyko, wymaga aparatury.' },
+        { id: 'fentanyl', name: '☠️ Fentanyl', unit: '1 fiolka (2g)', price: 3500, prevPrice: 3500, desc: 'Najcięższa i ryzykowna substancja.' }
+    ];
+
+    // Sprawdzenie LocalStorage (żeby ceny zapisały się u Ciebie po odświeżeniu)
+    const savedData = localStorage.getItem('rp_market_data');
+    if (savedData) {
+        products = JSON.parse(savedData);
+    }
+
+    // --- INICJALIZACJA WYKRESU ---
+    const ctx = document.getElementById('marketChart').getContext('2d');
+    
+    // Konfiguracja wykresu
+    let marketChart = new Chart(ctx, {
+        type: 'bar', // Typ wykresu: słupkowy
+        data: {
+            labels: products.map(p => p.name),
+            datasets: [{
+                label: 'Cena rynkowa ($)',
+                data: products.map(p => p.price),
+                backgroundColor: [
+                    'rgba(46, 204, 113, 0.6)', // Green
+                    'rgba(46, 204, 113, 0.8)', 
+                    'rgba(160, 82, 45, 0.7)',  // Brown
+                    'rgba(255, 255, 255, 0.7)', // White
+                    'rgba(200, 200, 200, 0.7)', 
+                    'rgba(231, 76, 60, 0.7)',  // Red
+                    'rgba(52, 152, 219, 0.7)', // Blue
+                    'rgba(142, 68, 173, 0.7)'  // Purple
+                ],
+                borderColor: 'rgba(0,0,0,0.5)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#333' },
+                    ticks: { color: '#888' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#ccc', font: { size: 11 } }
+                }
+            },
+            plugins: {
+                legend: { display: false } // Ukrywamy legendę bo to oczywiste
+            }
+        }
+    });
+
+    // --- GENEROWANIE KART I ADMINA ---
+    const cardsContainer = document.getElementById('cards-container');
+    const adminContainer = document.getElementById('admin-inputs');
+
+    function renderUI() {
+        cardsContainer.innerHTML = '';
+        adminContainer.innerHTML = '';
+
+        products.forEach((product, index) => {
+            // 1. Logika strzałek
+            let trendHtml = '<span class="trend-arrow trend-neutral">➖</span>';
+            let trendText = '';
+            
+            if (product.price > product.prevPrice) {
+                trendHtml = '<span class="trend-arrow trend-up">⬆</span>';
+                trendText = '<span style="font-size:0.7em; color:var(--accent-green)"> (+Wzrost)</span>';
+            } else if (product.price < product.prevPrice) {
+                trendHtml = '<span class="trend-arrow trend-down">⬇</span>';
+                trendText = '<span style="font-size:0.7em; color:var(--accent-red)"> (-Spadek)</span>';
+            }
+
+            // 2. Tworzenie Karty HTML
+            const cardHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="drug-name">${product.name}</span>
+                        ${trendHtml}
+                    </div>
+                    <div class="drug-unit">${product.unit}</div>
+                    <div class="drug-price">
+                        $${product.price}
+                    </div>
+                    ${trendText}
+                    <div class="drug-desc">${product.desc}</div>
+                </div>
+            `;
+            cardsContainer.innerHTML += cardHTML;
+
+            // 3. Tworzenie Inputa dla Admina
+            const inputHTML = `
+                <div class="control-group">
+                    <label>${product.name}</label>
+                    <input type="number" value="${product.price}" onchange="updatePrice(${index}, this.value)">
+                </div>
+            `;
+            adminContainer.innerHTML += inputHTML;
+        });
+    }
+
+    // --- FUNKCJA AKTUALIZACJI CEN ---
+    function updatePrice(index, newPrice) {
+        newPrice = parseInt(newPrice);
+        
+        // Zapisujemy starą cenę jako 'prevPrice' żeby wykryć trend
+        products[index].prevPrice = products[index].price;
+        products[index].price = newPrice;
+
+        // Aktualizacja wykresu
+        marketChart.data.datasets[0].data[index] = newPrice;
+        marketChart.update();
+
+        // Zapisz w pamięci przeglądarki
+        localStorage.setItem('rp_market_data', JSON.stringify(products));
+
+        // Odśwież widok kart (żeby pokazać strzałki)
+        renderUI();
+    }
+
+    // --- FUNKCJA LOGOWANIA ---
+    function toggleAdmin() {
+        const panel = document.getElementById('admin-panel');
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+        } else {
+            const password = prompt("Podaj kod dostępu szefa:");
+            if (password === "admin") {
+                panel.style.display = 'block';
+                window.scrollTo(0, document.body.scrollHeight);
+            } else {
+                alert("Błędny kod.");
+            }
+        }
+    }
+
+    // Pierwsze uruchomienie
+    renderUI();
+
+</script>
+
 </body>
 </html>
-
